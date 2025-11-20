@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ContextForge - Dashboard de Monitoramento</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto; }
+    .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .status-online { color: #10b981; }
+    .status-offline { color: #ef4444; }
+    .badge-processing { background: #3b82f6; }
+    .badge-success { background: #10b981; }
+    .badge-idle { background: #6b7280; }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100">
+  <div class="min-h-screen p-6">
+    <div class="max-w-7xl mx-auto">
+
+      <!-- Header -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-2">
+          <h1 class="text-4xl font-bold">🤖 ContextForge Dashboard</h1>
+          <div class="flex items-center gap-2">
+            <span id="statusBall" class="w-3 h-3 rounded-full bg-green-500 pulse"></span>
+            <span id="statusText" class="text-sm font-medium status-online">Online</span>
+          </div>
+        </div>
+        <p class="text-gray-400">Monitoramento em tempo real da IA</p>
+      </div>
+
+      <!-- Status Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+
+        <!-- Status Card -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-medium text-gray-400">Status da IA</h3>
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M17.778 8.222c-4.296-4.296-11.26-4.296-15.556 0A1 1 0 01.808 6.808c5.076-5.077 13.308-5.077 18.384 0a1 1 0 01-1.414 1.414zM14.95 11.05a7 7 0 00-9.9 0 1 1 0 01-1.414-1.414 9 9 0 0112.728 0 1 1 0 01-1.414 1.414zM12.12 13.88a3 3 0 00-4.242 0 1 1 0 01-1.415-1.415 5 5 0 017.072 0 1 1 0 01-1.415 1.415zM9 16a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          <div class="text-3xl font-bold status-online mb-2" id="statusGeral">Online</div>
+          <div class="text-xs text-gray-500" id="statusHora">-</div>
+        </div>
+
+        <!-- Tokens Usados Hoje -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-medium text-gray-400">Tokens Hoje</h3>
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M8.5 3.5a.5.5 0 11-1 0 .5.5 0 011 0zM6 7a1 1 0 11-2 0 1 1 0 012 0zM14 7a1 1 0 11-2 0 1 1 0 012 0zM10 10a1 1 0 11-2 0 1 1 0 012 0zM16 10a1 1 0 11-2 0 1 1 0 012 0zM13 13a1 1 0 11-2 0 1 1 0 012 0z"></path>
+            </svg>
+          </div>
+          <div class="text-3xl font-bold text-blue-400 mb-2" id="tokensHoje">0</div>
+          <div class="text-xs text-gray-500">Em <span id="requestsHoje">0</span> requisições</div>
+        </div>
+
+        <!-- Refinamentos Hoje -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-medium text-gray-400">Refinamentos</h3>
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          <div class="text-3xl font-bold text-purple-400 mb-2" id="refinamentosHoje">0</div>
+          <div class="text-xs text-gray-500">Desde 00:00</div>
+        </div>
+
+        <!-- Taxa de Sucesso -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-medium text-gray-400">Taxa Sucesso</h3>
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          <div class="text-3xl font-bold text-green-400 mb-2" id="taxaSucesso">-</div>
+          <div class="text-xs text-gray-500">Com feedback</div>
+        </div>
+
+      </div>
+
+      <!-- Content Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+        <!-- Operações em Tempo Real -->
+        <div class="lg:col-span-2 bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+            ⚡ Operações em Tempo Real
+            <span id="operacaoAtiva" class="badge-idle text-xs px-2 py-1 rounded text-white">Idle</span>
+          </h2>
+
+          <div id="operacoesContainer" class="space-y-3 max-h-96 overflow-y-auto">
+            <div class="text-gray-500 text-sm text-center py-8">Aguardando operações...</div>
+          </div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <h2 class="text-lg font-bold mb-4">📊 Estatísticas</h2>
+
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between text-xs text-gray-400 mb-2">
+                <span>Total de Tokens</span>
+                <span id="totalTokens">0</span>
+              </div>
+              <div class="bg-gray-700 rounded-full h-2">
+                <div id="tokensBar" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs text-gray-400 mb-2">
+                <span>Requisições</span>
+                <span id="totalRequisicoes">0</span>
+              </div>
+              <div class="bg-gray-700 rounded-full h-2">
+                <div id="requisicoesBbar" class="bg-purple-500 h-2 rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="mt-6 pt-6 border-t border-gray-700">
+              <h3 class="text-sm font-medium text-gray-400 mb-3">Por Tipo</h3>
+              <div id="statsTable" class="space-y-2 text-xs">
+                <!-- Gerado dinamicamente -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Gráficos -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+        <!-- Gráfico de Tokens -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <h2 class="text-lg font-bold mb-4">📈 Tokens por Tipo</h2>
+          <canvas id="chartTokens" height="80"></canvas>
+        </div>
+
+        <!-- Gráfico de Refinamentos -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <h2 class="text-lg font-bold mb-4">🎯 Refinamentos por Tipo</h2>
+          <canvas id="chartRefinamentos" height="80"></canvas>
+        </div>
+
+      </div>
+
+      <!-- Histórico Detalhado -->
+      <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <h2 class="text-lg font-bold mb-4">📜 Histórico de Refinamentos</h2>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="border-b border-gray-700">
+              <tr class="text-gray-400 text-xs uppercase">
+                <th class="text-left py-3 px-4">Hora</th>
+                <th class="text-left py-3 px-4">Projeto</th>
+                <th class="text-left py-3 px-4">Tipo</th>
+                <th class="text-left py-3 px-4">Tokens</th>
+                <th class="text-left py-3 px-4">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaRefinamentos" class="divide-y divide-gray-700">
+              <tr class="text-gray-500">
+                <td colspan="5" class="py-8 text-center">Nenhum refinamento ainda</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-8 pt-6 border-t border-gray-700 text-center text-gray-500 text-xs">
+        <p>Auto-refresh a cada 2 segundos | Última atualização: <span id="ultimaAtualizacao">-</span></p>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Configurar Supabase
+    const SUPABASE_URL = 'https://wicrpmtwrctukxxyjgxz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpY3JwbXR3cmN0dWt4eHlqZ3h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MDkwMjMsImV4cCI6MjA3OTE4NTAyM30.iEVDKeLGOL5r1nFRPTm81p2WDtv8wbMxLLm3kPvTKrE';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let operacaoEmAndamento = null;
+    let chartTokens = null;
+    let chartRefinamentos = null;
+
+    // ============================================
+    // Buscar e Atualizar Dados
+    // ============================================
+
+    async function atualizarDados() {
+      try {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        // Buscar refinamentos de hoje
+        const { data: refinamentos, error } = await supabase
+          .from('refinamentos')
+          .select('*')
+          .gte('created_at', hoje.toISOString())
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Erro ao buscar refinamentos:', error);
+          return;
+        }
+
+        atualizarCards(refinamentos);
+        atualizarOperacoes(refinamentos);
+        atualizarTabela(refinamentos);
+        atualizarGraficos(refinamentos);
+        atualizarUltimaAtualizacao();
+
+      } catch (error) {
+        console.error('Erro geral:', error);
+      }
+    }
+
+    function atualizarCards(refinamentos) {
+      if (!refinamentos) refinamentos = [];
+
+      // Tokens hoje
+      const tokensHoje = refinamentos.reduce((sum, r) => sum + (r.tokens_usados || 0), 0);
+      document.getElementById('tokensHoje').textContent = tokensHoje.toLocaleString();
+      document.getElementById('requestsHoje').textContent = refinamentos.length;
+      document.getElementById('totalTokens').textContent = tokensHoje.toLocaleString();
+
+      // Refinamentos
+      document.getElementById('refinamentosHoje').textContent = refinamentos.length;
+
+      // Taxa de sucesso
+      const comFeedback = refinamentos.filter(r => r.resolvido !== null);
+      const comSucesso = refinamentos.filter(r => r.resolvido === true);
+      const taxa = comFeedback.length > 0
+        ? Math.round((comSucesso.length / comFeedback.length) * 100)
+        : 0;
+      document.getElementById('taxaSucesso').textContent = taxa > 0 ? `${taxa}%` : '-';
+
+      // Estatísticas por tipo
+      const porTipo = {};
+      refinamentos.forEach(r => {
+        if (!porTipo[r.tipo_refinamento]) {
+          porTipo[r.tipo_refinamento] = { count: 0, tokens: 0 };
+        }
+        porTipo[r.tipo_refinamento].count++;
+        porTipo[r.tipo_refinamento].tokens += r.tokens_usados || 0;
+      });
+
+      const statsHtml = Object.entries(porTipo)
+        .map(([tipo, stats]) => `
+          <div class="flex justify-between">
+            <span class="capitalize">${tipo}</span>
+            <span class="text-gray-400">${stats.tokens} tokens</span>
+          </div>
+        `)
+        .join('');
+
+      document.getElementById('statsTable').innerHTML = statsHtml || '<div class="text-gray-500">-</div>';
+    }
+
+    function atualizarOperacoes(refinamentos) {
+      if (!refinamentos || refinamentos.length === 0) {
+        document.getElementById('operacaoAtiva').className = 'badge-idle text-xs px-2 py-1 rounded text-white';
+        document.getElementById('operacaoAtiva').textContent = 'Idle';
+        return;
+      }
+
+      const ultima = refinamentos[0];
+      const agora = new Date();
+      const timestamp = new Date(ultima.created_at);
+      const diferenca = Math.floor((agora - timestamp) / 1000);
+
+      let badge, label;
+      if (diferenca < 5) {
+        badge = 'badge-processing';
+        label = 'Processando...';
+      } else if (diferenca < 300) {
+        badge = 'badge-success';
+        label = 'Completado';
+      } else {
+        badge = 'badge-idle';
+        label = 'Idle';
+      }
+
+      document.getElementById('operacaoAtiva').className = badge + ' text-xs px-2 py-1 rounded text-white';
+      document.getElementById('operacaoAtiva').textContent = label;
+
+      // Mostrar últimas 5 operações
+      const html = refinamentos.slice(0, 5).map((r, idx) => {
+        const tempo = new Date(r.created_at);
+        const horas = String(tempo.getHours()).padStart(2, '0');
+        const minutos = String(tempo.getMinutes()).padStart(2, '0');
+        const segundos = String(tempo.getSeconds()).padStart(2, '0');
+
+        const statusBadge = r.resolvido === true
+          ? '<span class="badge-success text-xs px-2 py-1 rounded text-white">Funcionou</span>'
+          : r.resolvido === false
+          ? '<span class="badge-idle text-xs px-2 py-1 rounded text-white">Falhou</span>'
+          : '<span class="badge-idle text-xs px-2 py-1 rounded text-white">Pendente</span>';
+
+        return `
+          <div class="bg-gray-700 rounded p-3 text-sm">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <div class="font-medium">${r.tipo_refinamento}</div>
+                <div class="text-xs text-gray-400">${r.projeto_id}</div>
+              </div>
+              <div class="text-right">
+                <div class="font-mono text-blue-400">${r.tokens_usados} tokens</div>
+                <div class="text-xs text-gray-500">${horas}:${minutos}:${segundos}</div>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <div class="text-xs text-gray-500 truncate">${r.problema_original.substring(0, 40)}...</div>
+              ${statusBadge}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('operacoesContainer').innerHTML = html || '<div class="text-gray-500 text-sm text-center py-8">Aguardando operações...</div>';
+    }
+
+    function atualizarTabela(refinamentos) {
+      if (!refinamentos || refinamentos.length === 0) {
+        document.getElementById('tabelaRefinamentos').innerHTML = `
+          <tr class="text-gray-500">
+            <td colspan="5" class="py-8 text-center">Nenhum refinamento ainda</td>
+          </tr>
+        `;
+        return;
+      }
+
+      const html = refinamentos.map(r => {
+        const tempo = new Date(r.created_at);
+        const horas = String(tempo.getHours()).padStart(2, '0');
+        const minutos = String(tempo.getMinutes()).padStart(2, '0');
+        const segundos = String(tempo.getSeconds()).padStart(2, '0');
+
+        const status = r.resolvido === true ? '✅ Funcionou' : r.resolvido === false ? '❌ Falhou' : '⏳ Pendente';
+
+        return `
+          <tr class="hover:bg-gray-700 transition">
+            <td class="py-3 px-4 text-gray-400 font-mono">${horas}:${minutos}:${segundos}</td>
+            <td class="py-3 px-4 capitalize">${r.projeto_id}</td>
+            <td class="py-3 px-4 capitalize">${r.tipo_refinamento}</td>
+            <td class="py-3 px-4 text-blue-400 font-mono">${r.tokens_usados}</td>
+            <td class="py-3 px-4">${status}</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('tabelaRefinamentos').innerHTML = html;
+    }
+
+    function atualizarGraficos(refinamentos) {
+      if (!refinamentos || refinamentos.length === 0) {
+        return;
+      }
+
+      // Preparar dados por tipo
+      const porTipo = {};
+      refinamentos.forEach(r => {
+        if (!porTipo[r.tipo_refinamento]) {
+          porTipo[r.tipo_refinamento] = { tokens: 0, count: 0 };
+        }
+        porTipo[r.tipo_refinamento].tokens += r.tokens_usados || 0;
+        porTipo[r.tipo_refinamento].count += 1;
+      });
+
+      const tipos = Object.keys(porTipo);
+      const tokens = tipos.map(t => porTipo[t].tokens);
+      const counts = tipos.map(t => porTipo[t].count);
+
+      // Cores
+      const cores = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+
+      // Gráfico de tokens
+      if (chartTokens) chartTokens.destroy();
+      const ctxTokens = document.getElementById('chartTokens').getContext('2d');
+      chartTokens = new Chart(ctxTokens, {
+        type: 'doughnut',
+        data: {
+          labels: tipos.map(t => t.charAt(0).toUpperCase() + t.slice(1)),
+          datasets: [{
+            data: tokens,
+            backgroundColor: cores.slice(0, tipos.length),
+            borderColor: '#1f2937',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { labels: { color: '#9ca3af' } }
+          }
+        }
+      });
+
+      // Gráfico de refinamentos
+      if (chartRefinamentos) chartRefinamentos.destroy();
+      const ctxRefinamentos = document.getElementById('chartRefinamentos').getContext('2d');
+      chartRefinamentos = new Chart(ctxRefinamentos, {
+        type: 'bar',
+        data: {
+          labels: tipos.map(t => t.charAt(0).toUpperCase() + t.slice(1)),
+          datasets: [{
+            label: 'Refinamentos',
+            data: counts,
+            backgroundColor: cores.slice(0, tipos.length),
+            borderColor: '#1f2937',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          indexAxis: 'y',
+          plugins: {
+            legend: { labels: { color: '#9ca3af' } }
+          },
+          scales: {
+            x: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+            y: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } }
+          }
+        }
+      });
+    }
+
+    function atualizarUltimaAtualizacao() {
+      const agora = new Date();
+      const horas = String(agora.getHours()).padStart(2, '0');
+      const minutos = String(agora.getMinutes()).padStart(2, '0');
+      const segundos = String(agora.getSeconds()).padStart(2, '0');
+      document.getElementById('ultimaAtualizacao').textContent = `${horas}:${minutos}:${segundos}`;
+    }
+
+    // ============================================
+    // Init
+    // ============================================
+
+    atualizarDados();
+    setInterval(atualizarDados, 2000); // Atualizar a cada 2 segundos
+
+    // Atualizar hora do status
+    setInterval(() => {
+      const agora = new Date();
+      const horas = String(agora.getHours()).padStart(2, '0');
+      const minutos = String(agora.getMinutes()).padStart(2, '0');
+      document.getElementById('statusHora').textContent = `${horas}:${minutos}`;
+    }, 1000);
+  </script>
+</body>
+</html>
