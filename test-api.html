@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ContextForge - Teste de API</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto; }
+    .code-block { background: #1f2937; color: #e5e7eb; border-radius: 8px; padding: 16px; font-family: 'Monaco', monospace; font-size: 12px; overflow-x: auto; }
+    .success { background: #10b981; } .error { background: #ef4444; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-2xl mx-auto p-6">
+    <div class="bg-white rounded-lg shadow-lg p-8">
+
+      <h1 class="text-3xl font-bold mb-2">🧪 ContextForge - Teste de API</h1>
+      <p class="text-gray-600 mb-6">Teste a conexão com a API de refinamento</p>
+
+      <!-- Configuração -->
+      <div class="mb-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h2 class="font-bold mb-4">⚙️ Configuração</h2>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">URL da API</label>
+          <input type="text" id="apiUrl" value="https://context.vercel.app/api/refinar-prompt"
+            class="w-full px-3 py-2 border rounded-lg" placeholder="https://seu-projeto.vercel.app/api/refinar-prompt">
+          <small class="text-gray-600">Deixe vazio para usar localhost:3000</small>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Tipo de Refinamento</label>
+            <select id="tipoRefinamento" class="w-full px-3 py-2 border rounded-lg">
+              <option value="especifico">Específico (mais detalhado)</option>
+              <option value="contexto">Contexto (mais informação)</option>
+              <option value="alternativa">Alternativa (abordagem diferente)</option>
+              <option value="correcao">Correção (mais claro)</option>
+              <option value="refinar">Refinar (melhor qualidade)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-2">Projeto</label>
+            <select id="projeto" class="w-full px-3 py-2 border rounded-lg">
+              <option value="guarda-dinheiro">GuardaDinheiro</option>
+              <option value="nenem-pneus">Neném Pneus</option>
+              <option value="tenha-paz">Tenha Paz</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Entrada -->
+      <div class="mb-8">
+        <h2 class="font-bold mb-4">📝 Entrada</h2>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Problema (obrigatório)</label>
+          <textarea id="problema" rows="2" class="w-full px-3 py-2 border rounded-lg"
+            placeholder="Ex: Bug no checkout de pagamento">Como corrigir o bug de autenticação?</textarea>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Prompt Original (obrigatório)</label>
+          <textarea id="promptOriginal" rows="4" class="w-full px-3 py-2 border rounded-lg"
+            placeholder="Ex: Como fazer um form de login...">Preciso criar uma função que valida um email e retorna se é válido ou não. Deve aceitar emails com ou sem domínio.</textarea>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Contexto (opcional)</label>
+          <textarea id="contexto" rows="2" class="w-full px-3 py-2 border rounded-lg"
+            placeholder="Ex: React 18, Vite 7, TypeScript...">React 18 com TypeScript</textarea>
+        </div>
+      </div>
+
+      <!-- Botões -->
+      <div class="flex gap-4 mb-8">
+        <button onclick="testarAPI()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">
+          ▶️ Testar API
+        </button>
+        <button onclick="limpar()" class="px-6 bg-gray-300 hover:bg-gray-400 text-black font-bold py-3 rounded-lg">
+          Limpar
+        </button>
+      </div>
+
+      <!-- Status -->
+      <div id="statusDiv" class="mb-8 p-4 rounded-lg hidden" role="alert">
+        <div class="flex items-center gap-2 mb-2">
+          <span id="statusIcon">⏳</span>
+          <span id="statusText" class="font-bold">Carregando...</span>
+        </div>
+        <div id="statusDetails" class="text-sm text-gray-600"></div>
+      </div>
+
+      <!-- Resposta -->
+      <div class="mb-8" id="respostaDiv" style="display: none;">
+        <h2 class="font-bold mb-4">✅ Resposta da API</h2>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Status HTTP</label>
+          <div id="statusHttp" class="px-3 py-2 bg-gray-100 rounded-lg font-mono text-sm">-</div>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Prompt Refinado</label>
+          <textarea id="promptRefinado" rows="6" class="w-full px-3 py-2 border rounded-lg font-mono text-sm" readonly></textarea>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 mb-4">
+          <div class="p-3 bg-gray-100 rounded-lg">
+            <div class="text-xs text-gray-600">Tokens Usados</div>
+            <div id="tokens" class="font-bold text-lg">-</div>
+          </div>
+          <div class="p-3 bg-gray-100 rounded-lg">
+            <div class="text-xs text-gray-600">Input Tokens</div>
+            <div id="inputTokens" class="font-bold text-lg">-</div>
+          </div>
+          <div class="p-3 bg-gray-100 rounded-lg">
+            <div class="text-xs text-gray-600">Output Tokens</div>
+            <div id="outputTokens" class="font-bold text-lg">-</div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">JSON Completo</label>
+          <div id="jsonResposta" class="code-block mb-4"></div>
+        </div>
+
+        <button onclick="copiarJSON()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg">
+          📋 Copiar JSON
+        </button>
+      </div>
+
+      <!-- Erros -->
+      <div class="mb-8" id="erroDiv" style="display: none;">
+        <h2 class="font-bold mb-4 text-red-600">❌ Erro</h2>
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div id="erroMensagem" class="text-red-700 font-mono text-sm mb-2"></div>
+          <div id="erroDetalhes" class="text-red-600 text-sm"></div>
+        </div>
+      </div>
+
+      <!-- Logs -->
+      <div class="mt-8">
+        <h2 class="font-bold mb-4">📊 Logs de Requisição</h2>
+        <div id="logsDiv" class="code-block text-xs">Aguardando teste...</div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let jsonResposta = null;
+
+    function log(mensagem) {
+      const logsDiv = document.getElementById('logsDiv');
+      logsDiv.textContent += mensagem + '\n';
+      logsDiv.scrollTop = logsDiv.scrollHeight;
+    }
+
+    function mostrarStatus(icon, texto, detalhes) {
+      const div = document.getElementById('statusDiv');
+      document.getElementById('statusIcon').textContent = icon;
+      document.getElementById('statusText').textContent = texto;
+      document.getElementById('statusDetails').textContent = detalhes;
+      div.classList.remove('hidden');
+    }
+
+    async function testarAPI() {
+      // Validar inputs
+      const problema = document.getElementById('problema').value.trim();
+      const promptOriginal = document.getElementById('promptOriginal').value.trim();
+
+      if (!problema) {
+        alert('❌ Preenchimento obrigatório: Problema');
+        return;
+      }
+      if (!promptOriginal) {
+        alert('❌ Preenchimento obrigatório: Prompt Original');
+        return;
+      }
+
+      // Limpar
+      document.getElementById('respostaDiv').style.display = 'none';
+      document.getElementById('erroDiv').style.display = 'none';
+      document.getElementById('logsDiv').textContent = '';
+
+      // Pegar valores
+      let apiUrl = document.getElementById('apiUrl').value.trim();
+      if (!apiUrl) apiUrl = 'http://localhost:3000/api/refinar-prompt';
+
+      const tipo = document.getElementById('tipoRefinamento').value;
+      const projeto = document.getElementById('projeto').value;
+      const contexto = document.getElementById('contexto').value;
+
+      // Preparar requisição
+      const payload = {
+        promptOriginal,
+        contexto,
+        tipo,
+        problema,
+        memoria: [],
+        projeto_id: projeto
+      };
+
+      log('📤 Enviando requisição...');
+      log(`URL: ${apiUrl}`);
+      log(`Tipo: ${tipo}`);
+      log(`Projeto: ${projeto}`);
+      log(`Payload: ${JSON.stringify(payload, null, 2)}`);
+
+      mostrarStatus('⏳', 'Processando...', 'Aguardando resposta da API');
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        log(`\n📥 Resposta: ${response.status} ${response.statusText}`);
+
+        const data = await response.json();
+        jsonResposta = data;
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro desconhecido');
+        }
+
+        // Sucesso
+        log(`✅ Sucesso! Tokens: ${data.tokens}`);
+        mostrarStatus('✅', 'API funcionando!', `${data.tokens} tokens usados`);
+
+        document.getElementById('statusHttp').textContent = `${response.status} ${response.statusText}`;
+        document.getElementById('promptRefinado').value = data.promptRefinado;
+        document.getElementById('tokens').textContent = data.tokens.toLocaleString();
+        document.getElementById('inputTokens').textContent = (data.inputTokens || '-').toLocaleString();
+        document.getElementById('outputTokens').textContent = (data.outputTokens || '-').toLocaleString();
+        document.getElementById('jsonResposta').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('respostaDiv').style.display = 'block';
+
+      } catch (error) {
+        log(`\n❌ Erro: ${error.message}`);
+        mostrarStatus('❌', 'Erro na requisição', error.message);
+
+        document.getElementById('erroMensagem').textContent = error.message;
+        document.getElementById('erroDetalhes').innerHTML = `
+          <p><strong>Diagnóstico:</strong></p>
+          <ul class="list-disc ml-4">
+            <li>Verifique se a URL está correta</li>
+            <li>Verifique se as variáveis de ambiente estão configuradas no Vercel</li>
+            <li>Verifique se ANTHROPIC_API_KEY está válida</li>
+            <li>Abra F12 → Console para ver mais detalhes</li>
+          </ul>
+        `;
+        document.getElementById('erroDiv').style.display = 'block';
+      }
+    }
+
+    function limpar() {
+      document.getElementById('problema').value = '';
+      document.getElementById('promptOriginal').value = '';
+      document.getElementById('contexto').value = '';
+      document.getElementById('statusDiv').classList.add('hidden');
+      document.getElementById('respostaDiv').style.display = 'none';
+      document.getElementById('erroDiv').style.display = 'none';
+      document.getElementById('logsDiv').textContent = 'Aguardando teste...';
+    }
+
+    function copiarJSON() {
+      if (!jsonResposta) return;
+      const json = JSON.stringify(jsonResposta, null, 2);
+      navigator.clipboard.writeText(json).then(() => {
+        alert('✅ JSON copiado!');
+      });
+    }
+
+    // Permitir Enter para testar
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'Enter') testarAPI();
+    });
+  </script>
+</body>
+</html>
