@@ -1,0 +1,11 @@
+{
+  "id": "tenha-paz",
+  "nome": "Tenha Paz",
+  "descricao": "Plataforma de bem-estar e meditação",
+  "stack": "Next.js, Tailwind CSS, Supabase",
+  "project_context": "",
+  "architecture": "",
+  "changes_guide": "",
+  "arquivos_principais": [],
+  "padroes": []
+}

@@ -1,0 +1,15 @@
+{
+  "buildCommand": "npm install && npm run build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "env": {
+    "ANTHROPIC_API_KEY": "@contextforge-claude-key",
+    "SUPABASE_URL": "@contextforge-supabase-url",
+    "SUPABASE_SERVICE_ROLE_KEY": "@contextforge-supabase-key",
+    "NODE_ENV": "production"
+  }
+}

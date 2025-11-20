@@ -1,0 +1,11 @@
+{
+  "id": "nenem-pneus",
+  "nome": "Neném Pneus",
+  "descricao": "Sistema de gerenciamento de pneus",
+  "stack": "Node.js, Express, MongoDB",
+  "project_context": "",
+  "architecture": "",
+  "changes_guide": "",
+  "arquivos_principais": [],
+  "padroes": []
+}

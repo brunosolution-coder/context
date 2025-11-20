@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContextForge - Gerar Prompts com Contexto</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .toast {
+            animation: slideIn 0.3s ease-in-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        .toast.exit {
+            animation: slideOut 0.3s ease-in-out forwards;
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+        .hidden {
+            display: none;
+        }
+        .btn-refinamento {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: white;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-size: 1rem;
+            text-align: left;
+        }
+        .btn-refinamento:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        .btn-refinamento:active {
+            transform: translateY(0);
+        }
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <h1 class="text-4xl font-bold text-gray-900">⚡ ContextForge</h1>
+            <p class="text-gray-600 mt-2 text-lg">Prompts perfeitos com contexto completo</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Form Section -->
+        <div class="bg-white rounded-lg shadow-md p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">📝 Descrever Problema</h2>
+
+            <form id="promptForm" class="space-y-6">
+                <!-- Project Select -->
+                <div>
+                    <label for="projeto" class="block text-sm font-medium text-gray-700 mb-2">
+                        🎯 Selecione o Projeto
+                    </label>
+                    <select id="projeto" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">-- Escolha um projeto --</option>
+                    </select>
+                </div>
+
+                <!-- Problem Description -->
+                <div>
+                    <label for="problema" class="block text-sm font-medium text-gray-700 mb-2">
+                        🐛 Descrever o Problema
+                    </label>
+                    <textarea id="problema" required minlength="20" rows="5" placeholder="Ex: Bug timeout WhatsApp quando tenta enviar mensagem após 30s de inatividade. Preciso rastrear melhor os logs de conexão e implementar retry automático..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Mínimo 20 caracteres</p>
+                </div>
+
+                <!-- Main File (Optional) -->
+                <div>
+                    <label for="arquivo" class="block text-sm font-medium text-gray-700 mb-2">
+                        📄 Arquivo Principal (opcional)
+                    </label>
+                    <input type="text" id="arquivo" placeholder="Ex: lib/whatsapp/bot.ts" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200">
+                    🚀 Gerar Prompt Completo
+                </button>
+            </form>
+        </div>
+
+        <!-- Generated Prompt Section (hidden by default) -->
+        <div id="promptSection" class="hidden">
+            <div class="bg-white rounded-lg shadow-md p-8 mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">✨ Prompt Gerado</h2>
+                <p class="text-sm text-gray-600 mb-4">Cole este prompt no Claude Code e volte aqui para marcar como resolvido.</p>
+
+                <div class="bg-gray-900 rounded-lg p-6 mb-6 overflow-x-auto">
+                    <pre id="promptOutput" class="text-gray-100 text-sm font-mono whitespace-pre-wrap break-words"></pre>
+                </div>
+
+                <div class="flex gap-3 flex-wrap">
+                    <button id="copyBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                        📋 Copiar
+                    </button>
+                    <button id="saveBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                        💾 Salvar no Histórico
+                    </button>
+                    <button id="closePromptBtn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                        ✕ Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Refinement Section (hidden by default) -->
+        <div id="refinementSection" class="hidden">
+            <div class="bg-white rounded-lg shadow-md p-8 mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">
+                    🔄 Claude não resolveu? Refine com IA
+                </h2>
+                <p class="text-gray-600 mb-6">
+                    Nossa IA especialista vai analisar o problema e gerar um prompt mais efetivo.
+                </p>
+
+                <div id="refinementButtons" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                    <button type="button" onclick="refinarComIA('especifico')" class="btn-refinamento">
+                        <span class="text-2xl">🎯</span>
+                        <div>
+                            <div class="font-bold text-gray-900">Ser mais específico</div>
+                            <div class="text-sm text-gray-600">Adiciona detalhes técnicos</div>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="refinarComIA('contexto')" class="btn-refinamento">
+                        <span class="text-2xl">📚</span>
+                        <div>
+                            <div class="font-bold text-gray-900">Adicionar contexto</div>
+                            <div class="text-sm text-gray-600">Inclui mais info do projeto</div>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="refinarComIA('alternativa')" class="btn-refinamento">
+                        <span class="text-2xl">🔍</span>
+                        <div>
+                            <div class="font-bold text-gray-900">Pedir alternativa</div>
+                            <div class="text-sm text-gray-600">Abordagem diferente</div>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="refinarComIA('correcao')" class="btn-refinamento">
+                        <span class="text-2xl">❌</span>
+                        <div>
+                            <div class="font-bold text-gray-900">Corrigir mal-entendido</div>
+                            <div class="text-sm text-gray-600">Clarifica o problema real</div>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="refinarComIA('refinar')" class="btn-refinamento">
+                        <span class="text-2xl">✨</span>
+                        <div>
+                            <div class="font-bold text-gray-900">Refinar solução</div>
+                            <div class="text-sm text-gray-600">Melhorar código/approach</div>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Status de refinamento -->
+                <div id="refinementStatus" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-5 h-5 border-b-2 border-blue-600 spin"></div>
+                        <span class="text-blue-800">🧠 IA especialista analisando... (3-5 segundos)</span>
+                    </div>
+                </div>
+
+                <!-- Pergunta: Funcionou? -->
+                <div id="feedbackSection" class="hidden p-4 bg-gray-50 rounded-lg">
+                    <p class="font-medium text-gray-900 mb-3">
+                        ✅ Você usou este prompt refinado no Claude Code. Funcionou?
+                    </p>
+                    <div class="flex gap-3">
+                        <button type="button" onclick="marcarResolucao(true)" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-bold transition">
+                            ✅ Sim, resolveu!
+                        </button>
+                        <button type="button" onclick="marcarResolucao(false)" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-bold transition">
+                            ❌ Ainda não
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="bg-white rounded-lg shadow-md p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">📚 Histórico de Prompts</h2>
+            <div id="historyContainer" class="space-y-3">
+                <p class="text-gray-500 text-center py-8">Nenhum prompt gerado ainda. Crie um para começar!</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50"></div>
+
+    <!-- Load Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
+
+    <!-- Load Contexts and App -->
+    <script src="contexts.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
