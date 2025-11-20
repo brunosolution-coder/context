@@ -89,8 +89,8 @@ SELECT
   COUNT(CASE WHEN resolvido = true THEN 1 END) as resolvidos,
   COUNT(CASE WHEN resolvido IS NOT NULL THEN 1 END) as total_com_feedback,
   ROUND(
-    100.0 * COUNT(CASE WHEN resolvido = true THEN 1 END) /
-    NULLIF(COUNT(CASE WHEN resolvido IS NOT NULL THEN 1 END), 0),
+    (100.0 * COUNT(CASE WHEN resolvido = true THEN 1 END) /
+    NULLIF(COUNT(CASE WHEN resolvido IS NOT NULL THEN 1 END), 0))::numeric,
     2
   ) as taxa_sucesso_percentual
 FROM refinamentos
@@ -103,8 +103,8 @@ SELECT
   COUNT(*) as total_usado,
   COUNT(CASE WHEN resolvido = true THEN 1 END) as vezes_resolveu,
   ROUND(
-    100.0 * COUNT(CASE WHEN resolvido = true THEN 1 END) /
-    NULLIF(COUNT(*), 0),
+    (100.0 * COUNT(CASE WHEN resolvido = true THEN 1 END) /
+    NULLIF(COUNT(*), 0))::numeric,
     2
   ) as taxa_sucesso_percentual
 FROM refinamentos
@@ -119,7 +119,7 @@ SELECT
   tipo_problema,
   tipo_refinamento,
   COUNT(*) as vezes_usado,
-  ROUND(taxa_sucesso, 2) as taxa_sucesso_pct
+  ROUND(taxa_sucesso::numeric, 2) as taxa_sucesso_pct
 FROM solucoes_efetivas
 GROUP BY projeto_id, tipo_problema, tipo_refinamento, taxa_sucesso
 ORDER BY projeto_id, vezes_usado DESC;
